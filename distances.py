@@ -1,4 +1,3 @@
-# %%
 # 2023-6-13 16:24:00
 # 35.560468  139.547458
 # 35.560656  139.546283
@@ -8,7 +7,17 @@ import csv
 import datetime
 import os
 
-# %%
+def get_string_between_underscores(filename):
+    # ファイル名から拡張子を除去します
+    filename_without_extension = filename.rsplit('.', 1)[0]
+
+    # アンダーバーによって分割された部分を取得します
+    parts = filename_without_extension.split('_')
+
+    # 二つ目と三つ目のアンダーバーの間の部分を取得します
+    # これは、分割された部分のリストの二つ目の要素になります（インデックスは0から始まるため）
+    return parts[2] if len(parts) > 2 else None
+
 def calculate_distance(lat1, lon1, lat2, lon2):
     # 地球の半径（単位: メートル）
     earth_radius = 6371000.0
@@ -28,13 +37,9 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
     return distance
 
-# %%
-def get_start_and_goal_time():
-    # 年月日時分秒の入力
-    input_date_str = input("年月日時分秒を入力してください (YYYY-MM-DD HH:MM:SS): ")
-
+def get_start_and_goal_time(run_start_time):
     # 入力された文字列をdatetimeオブジェクトに変換
-    input_date = datetime.datetime.strptime(input_date_str, "%Y-%m-%d %H:%M:%S")
+    input_date = datetime.datetime.strptime(run_start_time, "%Y-%m-%d %H:%M:%S")
 
     # 入力されたdatetimeオブジェクトを表示
     print("入力された日付と時刻:", input_date)
@@ -50,11 +55,10 @@ def get_start_and_goal_time():
 
     return start_time, goal_time
 
-# %%
 # csvからスタートとゴールの座標を取得
 
-def get_coordinate_from_csv(csv_file, start_time, goal_time):
-    with open(csv_file, newline='') as file:
+def get_coordinate_from_csv(csv_file_path, start_time, goal_time):
+    with open(csv_file_path, newline='') as file:
         reader = csv.reader(file)
         for row in reader:
             if row[0] == start_time:
@@ -64,7 +68,7 @@ def get_coordinate_from_csv(csv_file, start_time, goal_time):
         start_lat = float(start_lat)
         start_lon = float(start_lon)
 
-    with open(csv_file, newline='') as file:
+    with open(csv_file_path, newline='') as file:
         reader = csv.reader(file)
         for row in reader:
             if row[0] == goal_time:
@@ -89,23 +93,26 @@ def get_coordinate_from_csv(csv_file, start_time, goal_time):
 
     return start_lat, start_lon, goal_lat, goal_lon
 
+def get_name_and_distances(run_start_time):
+    name_and_distances = {}
+    # csv_filesディレクトリの中にあるすべてのcsvファイルを取得します
+    csv_directory = 'csv_file'
+    csv_files = [f for f in os.listdir(csv_directory) if f.endswith('.csv')]
 
-# %%
-def get_distances():
-    csv_directory = "csv_file"  # CSVファイルが格納されているディレクトリのパス
-    distances = []
-    # 指定されたディレクトリ内のすべてのファイルを走査し、CSVファイルの相対パスを取得する
-    csv_files = [os.path.join(csv_directory, file) for file in os.listdir(csv_directory) if file.endswith(".csv")]
-
-    start_time, goal_time = get_start_and_goal_time()
+    start_time, goal_time = get_start_and_goal_time(run_start_time)
 
     # 結果を個人と紐づけてdistanceに入れる必要あり
     for csv_file in csv_files:
-        start_lat, start_lon, goal_lat, goal_lon = get_coordinate_from_csv(csv_file, start_time, goal_time)
+        csv_file_path = os.path.join(csv_directory, csv_file)
+        start_lat, start_lon, goal_lat, goal_lon = get_coordinate_from_csv(csv_file_path, start_time, goal_time)
+        name = get_string_between_underscores(csv_file)
         distance = calculate_distance(start_lat, start_lon, goal_lat, goal_lon)
-        print("あなたの８秒間で走った距離は", distance, "メートルです。")
-        distances.append(distance)
+        print(name, "の８秒間で走った距離は", distance, "メートルです。")
+        name_and_distances[name] = distance
 
-    return distances
+    return name_and_distances
+
+
+
 
 
